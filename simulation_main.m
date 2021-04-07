@@ -49,10 +49,17 @@ Q = 0.01*eye(3);%normrnd(0, sigma_u);
 R = 0.5*eye(3);%normrnd(0, sigma_v);
 
 for i = 1:N
-   particle(:,i,1) = saved_s(:,1)+gen_x0(); %[10 10 10]';
+   particle(:,i,1) = saved_s(:,1); %[10 10 10]';
 end
 
-Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'multinomial_resampling');
+% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'multinomial_resampling');
+% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'systematic_resampling');
+% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'stratified_resampling');
+% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Residual_resampling');
+% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Metropolis_resampling');
+% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Rejection_resampling');
+
+Filtering_UFIR = UFIR(0,0,H,2,saved_s(:,1));
 
 for k = 1:simulation_step
     
@@ -60,15 +67,18 @@ for k = 1:simulation_step
     z = saved_z(:,k);
     u = saved_u(:,k);
     %% filter
-    %PF (SECOND)
-    est_PF(:,k) = Filtering_PF.estimator(k,z,u,H); 
+    % PF 
+    %est_PF(:,k) = Filtering_PF.estimator(k,z,u,H); 
     
+    % UFIR
+    est_UFIR(:,k) = Filtering_UFIR.extended_UFIR(z,u);
 end
 
 % ERROR FIRST
 Error_s_first_data = zeros(s_size,simulation_step);
 for i = 1:simulation_step
-    Error_s_first_data(:,i) = saved_s(:,i) - est_PF(:,i);
+    %Error_s_first_data(:,i) = saved_s(:,i) - est_PF(:,i);
+    Error_s_first_data(:,i) = saved_s(:,i) - est_UFIR(:,i);
 end
 %% Calculate RMSE FIRST
 RMSE_interval = 20:simulation_step;
@@ -89,7 +99,8 @@ RMSE_x3_first = sqrt(mean(Error_s_first_data(3,RMSE_interval).^2));
 figure(1)
 plot(saved_s(1,:), saved_s(2,:),  '*-', 'color', [0.3 0.3 0.3], 'Displayname', 'state'); hold on; grid on;
 plot(saved_z(1,:), saved_z(2,:),  '*-', 'color', [0.9 0.3 0.3],'Displayname', 'measurement'); 
-plot(est_PF(1,:), est_PF(2,:),  '*-', 'color', [0.3 0.3 0.9],'LineWidth',1.5, 'Displayname', 'estimate');
+% plot(est_PF(1,:), est_PF(2,:),  '*-', 'color', [0.3 0.3 0.9],'LineWidth',1.5, 'Displayname', 'estimate');
+plot(est_UFIR(1,:), est_UFIR(2,:),  '*-', 'color', [0.3 0.3 0.9],'LineWidth',1.5, 'Displayname', 'estimate');
 title('measurement position')
 legend('Location','northeast')
 % save('simulation_data','saved_s','saved_z','saved_u')

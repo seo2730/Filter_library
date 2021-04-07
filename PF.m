@@ -4,6 +4,7 @@ classdef PF < handle
        particle;
        % Number of particle
        N;
+       
        % Weight
        W;
        % Noise
@@ -43,7 +44,8 @@ classdef PF < handle
                xk(:,i) = model.fx(xkm1(:,i),u) + diag(normrnd(0,model.Q));
                
                % yk = model.hx(xkm1(:,i)) + diag(normrnd(0,model.R));
-               yk = H*xkm1(:,i) + diag(normrnd(0,model.R)); % 대각선 요소만 뽑아옴 or 대각행렬으로 만듬
+               % yk = H*xkm1(:,i) + diag(normrnd(0,model.R)); % 대각선 요소만 뽑아옴 or 대각행렬으로 만듬
+               yk = H*xk(:,i) + diag(normrnd(0,model.R));
                
                wk(i) = wkm1(i) * (normpdf((z - yk), 0, model.sigma_v))'*(normpdf((z - yk), 0, model.sigma_v));
            end
@@ -74,6 +76,8 @@ classdef PF < handle
                case 'multinomial_resampling'
                   with_replacement = true;
                   idx = randsample(1:Ns, Ns, with_replacement, wk);
+                  xk = xk(:,idx);                    % extract new particles
+                  wk = repmat(1/Ns, 1, Ns);          % now all particles have the same weight
             %{
                   THIS IS EQUIVALENT TO:
                   edges = min([0 cumsum(wk)'],1); % protect against accumulated round-off
@@ -82,6 +86,19 @@ classdef PF < handle
                   % the interval where the sample is to be found
                   [~, idx] = histc(sort(rand(Ns,1)), edges);
             %}
+               case 'stratified_resampling'
+                    j = 1;
+                    sumQ = wk(j);
+                    for i=1:Ns
+                       u = (rand()+i-1)/Ns;
+                       while sumQ < u
+                           j = j+1;
+                           sumQ = sumQ + wk(j);
+                       end
+                       xk(:,i) = xk(:,j);              % extract new particles
+                    end
+                    wk = repmat(1/Ns, 1, Ns);          % now all particles have the same weight
+                    
                case 'systematic_resampling'
                   % this is performing latin hypercube sampling on wk
                   edges = min([0 cumsum(wk)'],1); % protect against accumulated round-off
@@ -90,15 +107,69 @@ classdef PF < handle
                   % this works like the inverse of the empirical distribution and returns
                   % the interval where the sample is to be found
                   [~, idx] = histc(u1:1/Ns:1, edges);
-               % case 'regularized_pf'      TO BE IMPLEMENTED
-               % case 'stratified_sampling' TO BE IMPLEMENTED
-               % case 'residual_sampling'   TO BE IMPLEMENTED
+                  xk = xk(:,idx);                    % extract new particles
+                  wk = repmat(1/Ns, 1, Ns);          % now all particles have the same weight
+
+                case 'Residual_resampling'
+                    Nr=Ns; jj=0;
+                    for i=1:Ns
+                        j=floor(wk(i)*Ns);
+                        for ii=1:j
+                            jj=jj+1;
+                            xk(:,jj)=xk(:,i);
+                        end
+                        wk(i)=wk(i)-j/Ns;
+                        Nr=Nr-j;
+                     end
+                     if Nr>0
+                         for i=1:Ns
+                            wk(i)=wk(i)*Ns/Nr;
+                         end
+                        j=1; sumQ=wk(1);
+                        for i=1:Nr
+                            u=(rand()+i-1)/Nr;
+                            while sumQ<u
+                                j=j+1;
+                                sumQ=sumQ+wk(j);
+                            end
+                            jj=jj+1;
+                            xk(:,jj)=xk(:,j);
+                        end
+                     end
+                     
+                case 'Metropolis_resampling'
+                    Nc = 10;
+                    for i = 1:Ns
+                        ii=i;
+                       for j = 1:Nc
+                          u = rand();
+                          jj = floor(rand()*Ns) + 1;
+                          if u<=wk(jj)/wk(ii)
+                             ii=jj; 
+                          end
+                       end
+                       xk(i)=xk(ii);
+                    end
+                    
+                case 'Rejection_resampling'
+                    maxW = max(wk);
+                    for i=1:Ns
+                       j=1;
+                       u=rand();
+                       while u>wk(j)/maxW
+                          j=floor(rand()*Ns) + 1;
+                          u=rand();
+                       end
+                       xk(i) = xk(j);
+                    end
+                case 'Partial_resampling'
+                    
+                    
                otherwise
                   error('Resampling strategy not implemented')                 
             end
             
-            xk = xk(:,idx);                    % extract new particles
-            wk = repmat(1/Ns, 1, Ns);          % now all particles have the same weight              
+                          
        end
       
        % system model f(x), h(x)
