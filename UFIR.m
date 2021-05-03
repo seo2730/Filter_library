@@ -1,7 +1,13 @@
 classdef UFIR < handle
    properties
        % System model
-       F,E,H;
+       A,B,C;
+       
+       % Stack Data
+       A_stack,B_stack,C_stack;
+       
+       % FIR Data
+       F,E,H
        
        % GNPG
        G;
@@ -13,15 +19,55 @@ classdef UFIR < handle
    end
    
    methods
-       function model = UFIR(F,E,H,N,x0) %(F,E,H,N)
-            model.F = F;
-            model.E = E;
-            model.H = H;
-            
-            model.G = H;
-            
+       function model = UFIR(N,x0)
             model.N = N; 
             model.x = x0;
+       end
+       
+       function [F,E,H] = stack(model,A,B,C)
+            persistent A_stack B_stack C_stack;
+            if isempty(A_stack)
+                A_stack = A;
+            else
+                A_stack = [A A_stack];
+                if size(A_stack,2)>model.N*size(A,2)
+                    for i=model.N:2
+                        A_stack(:,i*size(A,2)-size(A,2)+1:i*size(A,2)) = A_stack(:,(i-1)*size(A,2)-size(A,2)+1:(i-1)*size(A,2));
+                    end
+                    A_stack(:,(model.N+1)*size(A,2)-size(A,2)+1:(model.N+1)*size(A,2)) = [];
+                end
+            end
+            
+            if isempty(B_stack)
+                B_stack = B;   
+            else
+                B_stack = [B B_stack];
+                if size(B_stack,2)>model.N*size(B,2)
+%                     for i=model.N:2
+%                          B_stack(:,i*size(B,2)-size(B,2)+1:i*size(B,2)) = B_stack(:,(i-1)*size(B,2)-size(B,2)+1:(i-1)*size(B,2));
+%                     end
+                    B_stack(:,(model.N+1)*size(B,2)-size(B,2)+1:(model.N+1)*size(B,2)) = [];
+                end
+            end
+            
+            if isempty(C_stack)
+                C_stack = C;   
+            else
+                C_stack = [C,C_stack];
+                if size(C_stack,2)>model.N*size(C,2)
+                    for i=model.N:2
+                        C_stack(:,i*size(C,2)-size(C,2)+1:i*size(C,2)) = C_stack(:,(i-1)*size(C,2)-size(C,2)+1:(i-1)*size(C,2));
+                    end
+                    C_stack(:,(model.N+1)*size(C,2)-size(C,2)+1:(model.N+1)*size(C,2)) = [];
+                end
+            end
+            F = A_stack;
+            E = B_stack;
+            H = C_stack;
+       end
+       
+       function xhat = batch_form(model,Y,U)
+           [L,S] = model.MakeBigMatrices(F,E,H,model.N);
        end
        
        function xhat = iterative_estimator(model,Y,U)

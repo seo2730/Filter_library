@@ -52,12 +52,12 @@ for i = 1:N
    particle(:,i,1) = saved_s(:,1); %[10 10 10]';
 end
 
-% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'multinomial_resampling');
-% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'systematic_resampling');
-% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'stratified_resampling');
-% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Residual_resampling');
-% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Metropolis_resampling');
-% Filtering_PF = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Rejection_resampling');
+Filtering_PF1 = PF(particle,N,W,Q,R,sigma_u,sigma_v,'multinomial_resampling');
+Filtering_PF2 = PF(particle,N,W,Q,R,sigma_u,sigma_v,'systematic_resampling');
+Filtering_PF3 = PF(particle,N,W,Q,R,sigma_u,sigma_v,'stratified_resampling');
+Filtering_PF4 = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Residual_resampling');
+Filtering_PF5 = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Metropolis_resampling');
+Filtering_PF6 = PF(particle,N,W,Q,R,sigma_u,sigma_v,'Rejection_resampling');
 
 Filtering_UFIR = UFIR(0,0,H,2,saved_s(:,1));
 
@@ -68,23 +68,53 @@ for k = 1:simulation_step
     u = saved_u(:,k);
     %% filter
     % PF 
-    %est_PF(:,k) = Filtering_PF.estimator(k,z,u,H); 
+    est_PF1(:,k) = Filtering_PF1.estimator(k,z,u,H); 
+    est_PF2(:,k) = Filtering_PF2.estimator(k,z,u,H); 
+    est_PF3(:,k) = Filtering_PF3.estimator(k,z,u,H); 
+    est_PF4(:,k) = Filtering_PF4.estimator(k,z,u,H); 
+    est_PF5(:,k) = Filtering_PF5.estimator(k,z,u,H); 
+    est_PF6(:,k) = Filtering_PF6.estimator(k,z,u,H); 
     
     % UFIR
-    est_UFIR(:,k) = Filtering_UFIR.extended_UFIR(z,u);
+    %est_UFIR(:,k) = Filtering_UFIR.extended_UFIR(z,u);
 end
 
 % ERROR FIRST
 Error_s_first_data = zeros(s_size,simulation_step);
 for i = 1:simulation_step
-    %Error_s_first_data(:,i) = saved_s(:,i) - est_PF(:,i);
-    Error_s_first_data(:,i) = saved_s(:,i) - est_UFIR(:,i);
+    Error_s_first_data1(:,i) = saved_s(:,i) - est_PF1(:,i);
+    Error_s_first_data2(:,i) = saved_s(:,i) - est_PF2(:,i);
+    Error_s_first_data3(:,i) = saved_s(:,i) - est_PF3(:,i);
+    Error_s_first_data4(:,i) = saved_s(:,i) - est_PF4(:,i);
+    Error_s_first_data5(:,i) = saved_s(:,i) - est_PF5(:,i);
+    Error_s_first_data6(:,i) = saved_s(:,i) - est_PF6(:,i);
+    %Error_s_first_data(:,i) = saved_s(:,i) - est_UFIR(:,i);
 end
 %% Calculate RMSE FIRST
 RMSE_interval = 20:simulation_step;
-RMSE_x1_first = sqrt(mean(Error_s_first_data(1,RMSE_interval).^2));
-RMSE_x2_first = sqrt(mean(Error_s_first_data(2,RMSE_interval).^2));
-RMSE_x3_first = sqrt(mean(Error_s_first_data(3,RMSE_interval).^2));
+RMSE_x1_first1 = sqrt(mean(Error_s_first_data1(1,RMSE_interval).^2));
+RMSE_x2_first1 = sqrt(mean(Error_s_first_data1(2,RMSE_interval).^2));
+RMSE_x3_first1 = sqrt(mean(Error_s_first_data1(3,RMSE_interval).^2));
+
+RMSE_x1_first2 = sqrt(mean(Error_s_first_data2(1,RMSE_interval).^2));
+RMSE_x2_first2 = sqrt(mean(Error_s_first_data2(2,RMSE_interval).^2));
+RMSE_x3_first2 = sqrt(mean(Error_s_first_data2(3,RMSE_interval).^2));
+
+RMSE_x1_first3 = sqrt(mean(Error_s_first_data3(1,RMSE_interval).^2));
+RMSE_x2_first3 = sqrt(mean(Error_s_first_data3(2,RMSE_interval).^2));
+RMSE_x3_first3 = sqrt(mean(Error_s_first_data3(3,RMSE_interval).^2));
+
+RMSE_x1_first4 = sqrt(mean(Error_s_first_data4(1,RMSE_interval).^2));
+RMSE_x2_first4 = sqrt(mean(Error_s_first_data4(2,RMSE_interval).^2));
+RMSE_x3_first4 = sqrt(mean(Error_s_first_data4(3,RMSE_interval).^2));
+
+RMSE_x1_first5 = sqrt(mean(Error_s_first_data5(1,RMSE_interval).^2));
+RMSE_x2_first5 = sqrt(mean(Error_s_first_data5(2,RMSE_interval).^2));
+RMSE_x3_first5 = sqrt(mean(Error_s_first_data5(3,RMSE_interval).^2));
+
+RMSE_x1_first6 = sqrt(mean(Error_s_first_data6(1,RMSE_interval).^2));
+RMSE_x2_first6 = sqrt(mean(Error_s_first_data6(2,RMSE_interval).^2));
+RMSE_x3_first6 = sqrt(mean(Error_s_first_data6(3,RMSE_interval).^2));
 %% ERROR SECOND
 % Error_s_second_data = zeros(s_size,simulation_step);
 % for i = 1:simulation_step
@@ -97,10 +127,15 @@ RMSE_x3_first = sqrt(mean(Error_s_first_data(3,RMSE_interval).^2));
 % RMSE_x3_second = sqrt(mean(Error_s_second_data(3,RMSE_interval).^2));
 %% PLOT
 figure(1)
-plot(saved_s(1,:), saved_s(2,:),  '*-', 'color', [0.3 0.3 0.3], 'Displayname', 'state'); hold on; grid on;
-plot(saved_z(1,:), saved_z(2,:),  '*-', 'color', [0.9 0.3 0.3],'Displayname', 'measurement'); 
-% plot(est_PF(1,:), est_PF(2,:),  '*-', 'color', [0.3 0.3 0.9],'LineWidth',1.5, 'Displayname', 'estimate');
-plot(est_UFIR(1,:), est_UFIR(2,:),  '*-', 'color', [0.3 0.3 0.9],'LineWidth',1.5, 'Displayname', 'estimate');
+plot(saved_s(1,:), saved_s(2,:),  'r*-','Displayname', 'state'); hold on; grid on;
+% plot(saved_z(1,:), saved_z(2,:),  'k*-','Displayname', 'measurement'); 
+plot(est_PF1(1,:), est_PF1(2,:),  'k*-','LineWidth',1.5, 'Displayname', 'multinomial resampling');
+plot(est_PF2(1,:), est_PF2(2,:),  'g*-','LineWidth',1.5, 'Displayname', 'systematic resampling');
+plot(est_PF3(1,:), est_PF3(2,:),  'c*-','LineWidth',1.5, 'Displayname', 'stratified resampling');
+plot(est_PF4(1,:), est_PF4(2,:),  'b*-','LineWidth',1.5, 'Displayname', 'Residual resampling');
+plot(est_PF5(1,:), est_PF5(2,:),  'y*-','LineWidth',1.5, 'Displayname', 'Metropolis resampling');
+plot(est_PF6(1,:), est_PF6(2,:),  'm*-','LineWidth',1.5, 'Displayname', 'Rejection resampling');
+% plot(est_UFIR(1,:), est_UFIR(2,:),  '*-', 'color', [0.3 0.3 0.9],'LineWidth',1.5, 'Displayname', 'estimate');
 title('measurement position')
 legend('Location','northeast')
 % save('simulation_data','saved_s','saved_z','saved_u')
@@ -108,14 +143,35 @@ legend('Location','northeast')
 time_interval = 1:simulation_step;
 figure(2)
 subplot(3,1,1)
-plot(time_interval, Error_s_first_data(1,:), '*-', 'color', [0.9 0.3 0.3],'Displayname','s1 error');
-title('state error s1')
+plot(time_interval, Error_s_first_data1(1,:), 'r*-','Displayname','multinomial resampling');
+hold on
+plot(time_interval, Error_s_first_data2(1,:), 'k*-','Displayname','systematic resampling');
+plot(time_interval, Error_s_first_data3(1,:), 'g*-','Displayname','stratified resampling');
+plot(time_interval, Error_s_first_data4(1,:), 'c*-','Displayname','Residual resampling');
+plot(time_interval, Error_s_first_data5(1,:), 'b*-','Displayname','Metropolis resampling');
+plot(time_interval, Error_s_first_data6(1,:), 'm*-','Displayname','Rejection resampling');
+hold off
+title('state error x')
 legend('Location','southeast')
 subplot(3,1,2)
-plot(time_interval, Error_s_first_data(2,:), '*-', 'color', [0.9 0.3 0.3],'Displayname','s2 error');
-title('state error s1')
+plot(time_interval, Error_s_first_data1(2,:), 'r*-','Displayname','multinomial resampling');
+hold on
+plot(time_interval, Error_s_first_data2(2,:), 'k*-','Displayname','systematic resampling');
+plot(time_interval, Error_s_first_data3(2,:), 'g*-','Displayname','stratified resampling');
+plot(time_interval, Error_s_first_data4(2,:), 'c*-','Displayname','Residual resampling');
+plot(time_interval, Error_s_first_data5(2,:), 'b*-','Displayname','Metropolis resampling');
+plot(time_interval, Error_s_first_data6(2,:), 'm*-','Displayname','Rejection resampling');
+hold off
+title('state error y')
 legend('Location','southeast')
 subplot(3,1,3)
-plot(time_interval, Error_s_first_data(3,:), '*-', 'color', [0.9 0.3 0.3],'Displayname','s3 error');
-title('state error s1')
+plot(time_interval, Error_s_first_data1(3,:), 'r*-','Displayname','multinomial resampling');
+hold on
+plot(time_interval, Error_s_first_data2(3,:), 'k*-','Displayname','systematic resampling');
+plot(time_interval, Error_s_first_data3(3,:), 'g*-','Displayname','stratified resampling');
+plot(time_interval, Error_s_first_data4(3,:), 'c*-','Displayname','Residual resampling');
+plot(time_interval, Error_s_first_data5(3,:), 'b*-','Displayname','Metropolis resampling');
+plot(time_interval, Error_s_first_data6(3,:), 'm*-','Displayname','Rejection resampling');
+hold off
+title('state error theta')
 legend('Location','southeast')
