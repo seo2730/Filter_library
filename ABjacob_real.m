@@ -11,17 +11,17 @@ theta=xhat(3);
 v=u(1);
 w=u(2);
 
-A(1,1)=0;
+A(1,1)=1;
 A(1,2)=0;
 A(1,3)=-sin(theta)*v-dt*w*cos(theta);
 
 A(2,1)=0;
-A(2,2)=0;
+A(2,2)=1;
 A(2,3)=cos(theta)*v-dt*w*sin(theta);
 
 A(3,1)=0;
 A(3,2)=0;
-A(3,3)=0;
+A(3,3)=1;
 
 A=eye(3);
 

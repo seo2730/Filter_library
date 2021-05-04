@@ -1,97 +1,56 @@
 classdef UFIR < handle
    properties
-       % System model
-       A,B,C;
+       % System model & Noise size
+       sizeA,sizeB,sizeC;
+       sizeG;
        
        % Stack Data
        A_stack,B_stack,C_stack;
-       
-       % FIR Data
-       F,E,H
-       
-       % GNPG
-       G;
-       
-       x;
        
        % Horizon size
        N;
    end
    
    methods
-       function model = UFIR(N,x0)
+       function model = UFIR(sizeA,sizeB,sizeC,sizeG,N)
+            model.sizeA = sizeA;
+            model.sizeB = sizeB;
+            model.sizeC = sizeC;
+            model.sizeG = sizeG;
+           
             model.N = N; 
-            model.x = x0;
        end
        
-       function [F,E,H] = stack(model,A,B,C)
-            persistent A_stack B_stack C_stack;
-            if isempty(A_stack)
-                A_stack = A;
-            else
-                A_stack = [A A_stack];
-                if size(A_stack,2)>model.N*size(A,2)
-                    for i=model.N:2
-                        A_stack(:,i*size(A,2)-size(A,2)+1:i*size(A,2)) = A_stack(:,(i-1)*size(A,2)-size(A,2)+1:(i-1)*size(A,2));
-                    end
-                    A_stack(:,(model.N+1)*size(A,2)-size(A,2)+1:(model.N+1)*size(A,2)) = [];
-                end
-            end
-            
-            if isempty(B_stack)
-                B_stack = B;   
-            else
-                B_stack = [B B_stack];
-                if size(B_stack,2)>model.N*size(B,2)
-%                     for i=model.N:2
-%                          B_stack(:,i*size(B,2)-size(B,2)+1:i*size(B,2)) = B_stack(:,(i-1)*size(B,2)-size(B,2)+1:(i-1)*size(B,2));
-%                     end
-                    B_stack(:,(model.N+1)*size(B,2)-size(B,2)+1:(model.N+1)*size(B,2)) = [];
-                end
-            end
-            
-            if isempty(C_stack)
-                C_stack = C;   
-            else
-                C_stack = [C,C_stack];
-                if size(C_stack,2)>model.N*size(C,2)
-                    for i=model.N:2
-                        C_stack(:,i*size(C,2)-size(C,2)+1:i*size(C,2)) = C_stack(:,(i-1)*size(C,2)-size(C,2)+1:(i-1)*size(C,2));
-                    end
-                    C_stack(:,(model.N+1)*size(C,2)-size(C,2)+1:(model.N+1)*size(C,2)) = [];
-                end
-            end
-            F = A_stack;
-            E = B_stack;
-            H = C_stack;
-       end
-       
-       function xhat = batch_form(model,Y,U)
-           [L,S] = model.MakeBigMatrices(F,E,H,model.N);
-       end
-       
-       function xhat = iterative_estimator(model,Y,U)
-           [L,S] = model.MakeBigMatrices(model.F(:,1:60),model.E(:,1:48),model.H,model.N/2);
-           H_bar = S/(L'*L)*L';
-           model.G = (H_bar'*H_bar)^-1;
+       function xhat = batch_form(model,xm,Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm)
+           Ynm = Hnm*xm + Snm*Unm' + Lnm*Wnm' + Vnm';
+           % Ynm = Hnm*xm + Snm*Unm';
            
-           xs = model.G*H_bar'*(Y-L*U)+S(31:45,:)*U;
-           
-           for k=(model.N/2):model.N
-                if k==model.N/2
-                    xp = model.F(:,(15*k-14):15*k)*xs((15*k-14):15*k,:) + model.E(:,(15*k-14):15*k)*u;
-                    model.G = (model.H'*model.H + (model.F(:,(15*k-14):15*k)*model.G((15*k-14):15*k,(15*k-14):15*k)*model.F(:,(15*k-14):15*k)')^-1)^-1;
-                    K = model.G*model.H';
-                    xk = [zeros(9,1); delta_u_h] + K*(y-model.H*xp);            
-                else
-                    xp = model.F(:,(15*k-14):15*k)*xp + model.E(:,(15*k-14):15*k)*u;
-                    model.G = (model.H'*model.H + (model.F(:,(15*k-14):15*k)*model.G((15*k-14):15*k,(15*k-14):15*k)*model.F(:,(15*k-14):15*k)')^-1)^-1;
-                    K = model.G*model.H';
-                    xk = [zeros(9,1); delta_u_h] + K*(y-model.H*xp);
-                end
-           end
-           xhat = xk;
+           Knm = Fnm(1:model.sizeA(1),1:model.sizeA(2))*(Hnm'*Hnm)^-1*Hnm';
+           xhat = Knm*Ynm + (Enm(1:model.sizeB(1),:)-Knm*Snm)*Unm';
        end
+       
+%        function xhat = iterative_estimator(model,Y,U)
+%            [L,S] = model.MakeBigMatrices(model.F(:,1:60),model.E(:,1:48),model.H,model.N/2);
+%            H_bar = S/(L'*L)*L';
+%            model.G = (H_bar'*H_bar)^-1;
+%            
+%            xs = model.G*H_bar'*(Y-L*U)+S(31:45,:)*U;
+%            
+%            for k=(model.N/2):model.N
+%                 if k==model.N/2
+%                     xp = model.F(:,(15*k-14):15*k)*xs((15*k-14):15*k,:) + model.E(:,(15*k-14):15*k)*u;
+%                     model.G = (model.H'*model.H + (model.F(:,(15*k-14):15*k)*model.G((15*k-14):15*k,(15*k-14):15*k)*model.F(:,(15*k-14):15*k)')^-1)^-1;
+%                     K = model.G*model.H';
+%                     xk = [zeros(9,1); delta_u_h] + K*(y-model.H*xp);            
+%                 else
+%                     xp = model.F(:,(15*k-14):15*k)*xp + model.E(:,(15*k-14):15*k)*u;
+%                     model.G = (model.H'*model.H + (model.F(:,(15*k-14):15*k)*model.G((15*k-14):15*k,(15*k-14):15*k)*model.F(:,(15*k-14):15*k)')^-1)^-1;
+%                     K = model.G*model.H';
+%                     xk = [zeros(9,1); delta_u_h] + K*(y-model.H*xp);
+%                 end
+%            end
+%            xhat = xk;
+%        end
        
        function xhat = full_horizon_estimator(model,y,u)
             xp = model.F*model.x + model.E*u;
@@ -110,57 +69,103 @@ classdef UFIR < handle
             model.x = xhat;
        end
        
-       function [L,S] = MakeBigMatrices(model,A,B,C,N)
-            % parameter setting
-            N_system = size(A(:,1:15),1); N_input = size(B(:,1:12),2); N_output = size(C,1);
-           
-            % Error check
-            IsInput = 1;
-            
-            % initialization
-            if B == 0
-                IsInput = 0;
-                S = 0;
+       function [F,E,H,L] = stack(model,A,B,C,G)
+            persistent A_stack B_stack C_stack G_stack;
+            if isempty(A_stack)
+                A_stack = A;
             else
-                S = B;
-            end
-            
-            for i=1:N
-                if i==1
-                    if IsInput == 1
-                        S = B(:,(12*i-11):12*i);
-                        S_i = [A(:,(15*(i+1)-14):15*(i+1))*S B(:,(12*(i+1)-11):12*(i+1))];
-                    end
-                    
-                    %H = C;
-                    C_bar = C;
-                elseif i==2
-                    if IsInput == 1
-                        S = [S zeros(N_system,N_input); S_i];
-                        S_i = [A(:,(15*(i+1)-14):15*(i+1))*S_i B(:,(12*(i+1)-11):12*(i+1))];
-                    end
-                    
-                    %H = [C*(A(:,(15*i-14):15*i))^-1;H];
-                    C_bar = blkdiag(C,C_bar);
-                
-                elseif i==N
-                    if IsInput == 1
-                        S = [S zeros(N_system*(i-1),N_input); S_i];
-                        S_i = [A(:,(15*(i+1)-14):15*(i+1))*S_i B(:,(12*(i+1)-11):12*(i+1))];
-                    end
-                    C_bar = blkdiag(C,C_bar);
-                else
-                    if IsInput == 1
-                        S = [S zeros(N_system*(i-1),N_input); S_i];
-                        S_i = [A(:,(15*(i+1)-14):15*(i+1))*S_i B(:,(12*(i+1)-11):12*(i+1))];
-                    end
-                    
-                     %H = [C*(A(:,(15*i-14):15*i))^-1;H];
-                     C_bar = blkdiag(C,C_bar);
+                A_stack = [A A_stack];
+                if size(A_stack,2)>model.N*size(A,2)
+                    A_stack(:,(model.N+1)*size(A,2)-size(A,2)+1:(model.N+1)*size(A,2)) = [];
                 end
             end
             
-            L = C_bar*S;
+            if isempty(B_stack)
+                B_stack = B;   
+            else
+                B_stack = [B B_stack];
+                if size(B_stack,2)>model.N*size(B,2)
+                    B_stack(:,(model.N+1)*size(B,2)-size(B,2)+1:(model.N+1)*size(B,2)) = [];
+                end
+            end
+            
+            if isempty(C_stack)
+                C_stack = C;   
+            else
+                C_stack = [C,C_stack];
+                if size(C_stack,2)>model.N*size(C,2)
+                    C_stack(:,(model.N+1)*size(C,2)-size(C,2)+1:(model.N+1)*size(C,2)) = [];
+                end
+            end
+            
+            if isempty(G_stack)
+                G_stack = G;   
+            else
+                G_stack = [G,G_stack];
+                if size(G_stack,2)>model.N*size(G,2)
+                    G_stack(:,(model.N+1)*size(G,2)-size(G,2)+1:(model.N+1)*size(G,2)) = [];
+                end
+            end
+            
+            F = A_stack;
+            E = B_stack;
+            H = C_stack;
+            L = G_stack;
+       end
+       
+       function [Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm] = MakeBigMatrices(model,u,w,v,F,E,H,L)
+            % parameter setting
+            N_system = model.sizeA(1); N_input = model.sizeB(1); N_output = model.sizeC(1); N_noise = model.sizeG(1);
+            M_system = model.sizeA(2); M_input = model.sizeB(2); M_output = model.sizeC(2); M_noise = model.sizeG(2);
+            
+            % Input check
+            IsInput = 1;
+            
+            % initialization
+            if E == 0
+                IsInput = 0;
+                Enm = 0;
+            end
+            
+            for i=1:model.N
+                if i==1
+                    F_i = F(:,M_system*model.N-M_system+1:M_system*model.N);
+                    Latin_F = F_i;
+                    Fnm = F_i';
+                    
+                    Unm = u(:,i)';
+                    Wnm = w(:,i)';
+                    Vnm = v(:,i)';
+                else
+                    F_i = F(1:N_system,M_system*(model.N-i+1)-M_system+1:M_system*(model.N-i+1));
+                    Fnm = [(F_i*Latin_F(:,1:N_system))' Fnm];
+                    Latin_F = [F_i*Latin_F(:,1:N_system) Latin_F];
+                    
+                    Unm = [u(:,i)' Unm];
+                    Wnm = [w(:,i)' Wnm];
+                    Vnm = [v(:,i)' Vnm];
+                end
+            end
+            
+            for i=1:model.N
+                if i==1
+                    if IsInput == 1
+                        Enm = E(:,(M_input*(model.N-i+1)-M_input+1):M_input*(model.N-i+1));
+                    end
+                    H_bar = H(:,M_output*(model.N-i+1)-M_output+1:M_output*(model.N-i+1));
+                    Gnm = L(:,(M_noise*(model.N-i+1)-M_noise+1):M_noise*(model.N-i+1));
+                else
+                    if IsInput == 1
+                        Enm = [E(:,(M_input*(model.N-i+1)-M_input+1):M_input*(model.N-i+1)) F(:,M_system*(model.N-i+1)-M_system+1:M_system*(model.N-i+1))*Enm(1:N_input,:); zeros(size(Enm,1),M_input) Enm];
+                    end
+                     H_bar = blkdiag(H(:,M_output*(model.N-i+1)-N_system+1:M_output*(model.N-i+1)),H_bar);
+                     Gnm = [L(:,(M_noise*(model.N-i+1)-M_noise+1):M_noise*(model.N-i+1)) F(:,M_system*(model.N-i+1)-M_system+1:M_system*(model.N-i+1))*Gnm(1:N_noise,:); zeros(size(Gnm,1),M_noise) Gnm];
+                end
+            end
+            
+            Hnm = H_bar*Fnm';
+            Snm = H_bar*Enm;
+            Lnm = H_bar*Gnm;
        end
        
        %%%% System model %%%%
