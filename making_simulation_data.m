@@ -28,7 +28,7 @@ saved_y = zeros(y_size,simulation_step);
 saved_u = zeros(u_size,simulation_step);
 
 %% simulation 
-horizon_size = 5;
+horizon_size = 10;
 for k = 1:simulation_step
 
 %     w = sqrt(0.0)*ones(x_size,1);
@@ -55,7 +55,7 @@ for k = 1:simulation_step
     [F,E,H,L] = UFIR_estimator.stack(A,B,C,G);
     if k>=horizon_size
         [Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm] = UFIR_estimator.MakeBigMatrices(saved_u(:,k-horizon_size+1:k),saved_w(:,k-horizon_size+1:k),saved_v(:,k-horizon_size+1:k),F,E,H,L);
-        xhat = UFIR_estimator.batch_form(saved_x(:,k-horizon_size+1),Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm);
+        xhat = UFIR_estimator.batch_form(saved_x_real(:,k-horizon_size+1),Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm);
         saved_xhat(:,k) = xhat;
     else
         saved_xhat(:,k) = x;
