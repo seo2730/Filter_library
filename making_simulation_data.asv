@@ -80,7 +80,7 @@ plot(saved_x(1,:), saved_x(2,:), 'bo');
 hold on; grid on;
 plot(saved_xhat(1,:), saved_xhat(2,:), 'ro');
 % plot(saved_x_real(1,:), saved_x_real(2,:), 'k*');
-legend('Measurement state','UFIR estimate')
+legend('Me','UFIR estimate')
 % legend('No Filter','UFIR estimate','Real state')
 title('state position')
 

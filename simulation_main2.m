@@ -30,19 +30,9 @@ saved_u = zeros(u_size,simulation_step);
 %% simulation 
 horizon_size = 10;
 for k = 1:simulation_step
-
-%     w = sqrt(0.0)*ones(x_size,1);
-    w = 0.01*randn(x_size,1);
-%     v = 0.1*randn(x_size,1);
-    v = 0.0*randn(x_size,1);
-
     %% Obtain A,B Matrix
     [A, B] = ABjacob(x, u, dt);
     [A_real, B_real] = ABjacob_real(x_real, u, dt);
-    %% system update
-    x = A*x + B*u + G*w;
-    x_real = A_real*x_real + B_real*u;
-    y = C*x + v;
     
     saved_x(:,k) = x;
     saved_x_real(:,k) = x_real;
@@ -76,12 +66,11 @@ t = 0:dt:simulation_step*dt-dt;
 
 %% measurement position
 figure(1)
-plot(saved_x(1,:), saved_x(2,:), 'bo');
+plot(saved_x_real(1,:), saved_x_real(2,:), 'k*');
 hold on; grid on;
+plot(saved_x(1,:), saved_x(2,:), 'bo');
 plot(saved_xhat(1,:), saved_xhat(2,:), 'ro');
-% plot(saved_x_real(1,:), saved_x_real(2,:), 'k*');
-legend('Measurement state','UFIR estimate')
-% legend('No Filter','UFIR estimate','Real state')
+legend('Real state','No Filter','UFIR estimate')
 title('state position')
 
 figure(2)
@@ -89,21 +78,18 @@ tiledlayout(3,1)
 nexttile
 plot(t,saved_x_real(1,:)-saved_xhat(1,:),'r')
 hold on
-% plot(t,saved_x_real(1,:)-saved_x(1,:),'b')
+plot(t,saved_x_real(1,:)-saved_x(1,:),'b')
 hold off
-% legend('UFIR error','No filter eroor')
-legend('UFIR error')
+legend('UFIR error','No filter eroor')
 nexttile
 plot(t,saved_x_real(2,:)-saved_xhat(2,:),'r')
 hold on
-% plot(t,saved_x_real(2,:)-saved_x(2,:),'b')
+plot(t,saved_x_real(2,:)-saved_x(2,:),'b')
 hold off
-% legend('UFIR error','No filter eroor')
-legend('UFIR error')
+legend('UFIR error','No filter eroor')
 nexttile
 plot(t,saved_x_real(3,:)-saved_xhat(3,:),'r')
 hold on
-% plot(t,saved_x_real(3,:)-saved_x(3,:),'b')
+plot(t,saved_x_real(3,:)-saved_x(3,:),'b')
 hold off
-% legend('UFIR error','No filter eroor')
-legend('UFIR error')
+legend('UFIR error','No filter eroor')

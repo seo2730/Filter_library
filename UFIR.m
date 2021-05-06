@@ -21,13 +21,10 @@ classdef UFIR < handle
             model.N = N; 
        end
        
-       function xhat = batch_form(model,xm,Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm)
-           Ynm = Hnm*xm + Snm*Unm' + Lnm*Wnm' + Vnm';
-           % Ynm = Hnm*xm + Snm*Unm';
-           
+      function xhat = batch_form(model,Ynm,Unm,Fnm,Enm,Hnm,Snm)
            Knm = Fnm(1:model.sizeA(1),1:model.sizeA(2))*(Hnm'*Hnm)^-1*Hnm';
-           xhat = Knm*Ynm + (Enm(1:model.sizeB(1),:)-Knm*Snm)*Unm';
-       end
+           xhat = Knm*Ynm' + (Enm(1:model.sizeB(1),:)-Knm*Snm)*Unm';
+      end
        
 %        function xhat = iterative_estimator(model,Y,U)
 %            [L,S] = model.MakeBigMatrices(model.F(:,1:60),model.E(:,1:48),model.H,model.N/2);
@@ -113,7 +110,7 @@ classdef UFIR < handle
             L = G_stack;
        end
        
-       function [Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm] = MakeBigMatrices(model,u,w,v,F,E,H,L)
+       function [Ynm,Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm] = MakeBigMatrices(model,y,u,w,v,F,E,H,L)
             % parameter setting
             N_system = model.sizeA(1); N_input = model.sizeB(1); N_output = model.sizeC(1); N_noise = model.sizeG(1);
             M_system = model.sizeA(2); M_input = model.sizeB(2); M_output = model.sizeC(2); M_noise = model.sizeG(2);
@@ -133,6 +130,7 @@ classdef UFIR < handle
                     Latin_F = F_i;
                     Fnm = F_i';
                     
+                    Ynm = y(:,i)';
                     Unm = u(:,i)';
                     Wnm = w(:,i)';
                     Vnm = v(:,i)';
@@ -141,6 +139,7 @@ classdef UFIR < handle
                     Fnm = [(F_i*Latin_F(:,1:N_system))' Fnm];
                     Latin_F = [F_i*Latin_F(:,1:N_system) Latin_F];
                     
+                    Ynm = [y(:,i)' Ynm];
                     Unm = [u(:,i)' Unm];
                     Wnm = [w(:,i)' Wnm];
                     Vnm = [v(:,i)' Vnm];
