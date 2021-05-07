@@ -110,7 +110,7 @@ classdef UFIR < handle
             L = G_stack;
        end
        
-       function [Ynm,Unm,Wnm,Vnm,Fnm,Enm,Hnm,Snm,Lnm] = MakeBigMatrices(model,y,u,w,v,F,E,H,L)
+       function [Ynm,Unm,Fnm,Enm,Hnm,Snm,Lnm] = MakeBigMatrices(model,y,u,F,E,H,L)
             % parameter setting
             N_system = model.sizeA(1); N_input = model.sizeB(1); N_output = model.sizeC(1); N_noise = model.sizeG(1);
             M_system = model.sizeA(2); M_input = model.sizeB(2); M_output = model.sizeC(2); M_noise = model.sizeG(2);
@@ -132,8 +132,6 @@ classdef UFIR < handle
                     
                     Ynm = y(:,i)';
                     Unm = u(:,i)';
-                    Wnm = w(:,i)';
-                    Vnm = v(:,i)';
                 else
                     F_i = F(1:N_system,M_system*(model.N-i+1)-M_system+1:M_system*(model.N-i+1));
                     Fnm = [(F_i*Latin_F(:,1:N_system))' Fnm];
@@ -141,8 +139,6 @@ classdef UFIR < handle
                     
                     Ynm = [y(:,i)' Ynm];
                     Unm = [u(:,i)' Unm];
-                    Wnm = [w(:,i)' Wnm];
-                    Vnm = [v(:,i)' Vnm];
                 end
             end
             
