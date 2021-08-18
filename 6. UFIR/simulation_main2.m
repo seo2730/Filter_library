@@ -30,7 +30,7 @@ R = 0.9*eye(3);
 P0 = eye(3);
 
 % PF setting
-N = 100;
+N = 500;
 W = zeros(N,simulation_step);
 W(:,1) = repmat(1/N,N,1);
 for i = 1:N
@@ -41,7 +41,7 @@ sigma_v = sqrt(2);
 PF_estimator = PF(particle,N,W,Q,R,sigma_u,sigma_v,'systematic_resampling');
 
 % UFIR setting
-horizon_size = 10;
+horizon_size = 5;
 for k = 1:simulation_step
     %% Obtain A,B Matrix
     [A, B] = ABjacob(saved_x(:,k), saved_u(:,k), dt);
