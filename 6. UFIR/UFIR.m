@@ -23,35 +23,24 @@ classdef UFIR < handle
        
        function xhat = batch_form(model,Ynm,Unm,Fnm,Enm,Hnm,Snm)
            Knm = Fnm(1:model.sizeA(1),1:model.sizeA(2))*(Hnm'*Hnm)^-1*Hnm';
-           if norm(E) == 0
+           if norm(Enm) == 0
               xhat = Knm*Ynm';
            else
                xhat = Knm*Ynm' + (Enm(1:model.sizeB(1),:)-Knm*Snm)*Unm';
            end   
        end
        
-%        function xhat = iterative_estimator(model,Y,U)
-%            [L,S] = model.MakeBigMatrices(model.F(:,1:60),model.E(:,1:48),model.H,model.N/2);
-%            H_bar = S/(L'*L)*L';
-%            model.G = (H_bar'*H_bar)^-1;
-%            
-%            xs = model.G*H_bar'*(Y-L*U)+S(31:45,:)*U;
-%            
-%            for k=(model.N/2):model.N
-%                 if k==model.N/2
-%                     xp = model.F(:,(15*k-14):15*k)*xs((15*k-14):15*k,:) + model.E(:,(15*k-14):15*k)*u;
-%                     model.G = (model.H'*model.H + (model.F(:,(15*k-14):15*k)*model.G((15*k-14):15*k,(15*k-14):15*k)*model.F(:,(15*k-14):15*k)')^-1)^-1;
-%                     K = model.G*model.H';
-%                     xk = [zeros(9,1); delta_u_h] + K*(y-model.H*xp);            
-%                 else
-%                     xp = model.F(:,(15*k-14):15*k)*xp + model.E(:,(15*k-14):15*k)*u;
-%                     model.G = (model.H'*model.H + (model.F(:,(15*k-14):15*k)*model.G((15*k-14):15*k,(15*k-14):15*k)*model.F(:,(15*k-14):15*k)')^-1)^-1;
-%                     K = model.G*model.H';
-%                     xk = [zeros(9,1); delta_u_h] + K*(y-model.H*xp);
-%                 end
-%            end
-%            xhat = xk;
-%        end
+       function xhat = iterative_estimator(model,xs,Gs,z,alpha)
+           model.x = xs;
+           model.G = Gs;
+           for k=1:(model.N-alpha)
+                xp = model.F*model.x + model.E*u;
+                model.G = (model.H'*model.H + (model.F*model.G*model.F')^-1)^-1;
+                K = model.G*H';
+                xk = xp + K*(z-H*xp);
+           end
+           xhat = xk;
+       end
        
        function xhat = full_horizon_estimator(model,y,u)
             xp = model.F*model.x + model.E*u;
