@@ -21,10 +21,14 @@ classdef UFIR < handle
             model.N = N; 
        end
        
-      function xhat = batch_form(model,Ynm,Unm,Fnm,Enm,Hnm,Snm)
+       function xhat = batch_form(model,Ynm,Unm,Fnm,Enm,Hnm,Snm)
            Knm = Fnm(1:model.sizeA(1),1:model.sizeA(2))*(Hnm'*Hnm)^-1*Hnm';
-           xhat = Knm*Ynm' + (Enm(1:model.sizeB(1),:)-Knm*Snm)*Unm';
-      end
+           if norm(E) == 0
+              xhat = Knm*Ynm';
+           else
+               xhat = Knm*Ynm' + (Enm(1:model.sizeB(1),:)-Knm*Snm)*Unm';
+           end   
+       end
        
 %        function xhat = iterative_estimator(model,Y,U)
 %            [L,S] = model.MakeBigMatrices(model.F(:,1:60),model.E(:,1:48),model.H,model.N/2);
