@@ -1,5 +1,8 @@
 classdef UFIR < handle
    properties
+       % System model
+       A; B; C; G;
+       
        % System model & Noise size
        sizeA,sizeB,sizeC;
        sizeG;
@@ -8,17 +11,25 @@ classdef UFIR < handle
        A_stack,B_stack,C_stack;
        
        % Horizon size
-       N;
+       N; Horizon; alpha
+       
+       Gs;
    end
    
    methods
-       function model = UFIR(sizeA,sizeB,sizeC,sizeG,N)
-            model.sizeA = sizeA;
-            model.sizeB = sizeB;
-            model.sizeC = sizeC;
-            model.sizeG = sizeG;
+       function model = UFIR(A,B,C,G,Horizon,alpha)
+            model.A = A;
+            model.B = B;
+            model.C = C;
+            model.G = G;
            
-            model.N = N; 
+            model.sizeA = size(A);
+            model.sizeB = size(B);
+            model.sizeC = size(C);
+            model.sizeG = size(G);
+
+            model.Horizon = Horizon;
+            model.alpha = alpha;
        end
        
        function xhat = batch_form(model,Ynm,Unm,Fnm,Enm,Hnm,Snm)
@@ -30,14 +41,14 @@ classdef UFIR < handle
            end   
        end
        
-       function xhat = iterative_estimator(model,xs,Gs,z,alpha)
-           model.x = xs;
-           model.G = Gs;
-           for k=1:(model.N-alpha)
-                xp = model.F*model.x + model.E*u;
-                model.G = (model.H'*model.H + (model.F*model.G*model.F')^-1)^-1;
-                K = model.G*H';
-                xk = xp + K*(z-H*xp);
+       function xhat = iterative_estimator(model,xs,Hnm,z,u)
+           xp = xs;
+           model.Gs = (Hnm'*Hnm)^-1;
+           for k=1:(model.Horizon-model.alpha)
+                xp = model.A*xp + model.B*u;
+                model.Gs = (model.C'*model.C + (model.A*model.Gs*model.A')^-1)^-1;
+                K = model.Gs*model.C';
+                xk = xp + K*(z-model.C*xp);
            end
            xhat = xk;
        end
@@ -53,7 +64,7 @@ classdef UFIR < handle
        function xhat = extended_UFIR(model,y,u)
             xp = model.fx(model.x,u);
             model.F = model.jacobian_F(model.x,u);
-            model.G = (model.H'*model.H + (model.F*model.G*model.F')^-1)^-1;
+            model.Gs = (model.H'*model.H + (model.F*model.G*model.F')^-1)^-1;
             K = model.G*model.H';
             xhat = xp + K*(y-model.H*xp);
             model.x = xhat;
@@ -61,6 +72,12 @@ classdef UFIR < handle
        
        function [F,E,H,L] = stack(model,A,B,C,G)
             persistent A_stack B_stack C_stack G_stack;
+            if model.alpha==0
+                model.N = model.Horizon;
+            else
+                model.N = model.alpha;
+            end
+            
             if isempty(A_stack)
                 A_stack = A;
             else
@@ -104,6 +121,12 @@ classdef UFIR < handle
        end
        
        function [Ynm,Unm,Fnm,Enm,Hnm,Snm,Lnm] = MakeBigMatrices(model,y,u,F,E,H,L)
+            if model.alpha==0
+                model.N = model.Horizon;
+            else
+                model.N = model.alpha;
+            end
+           
             % parameter setting
             N_system = model.sizeA(1); N_input = model.sizeB(1); N_output = model.sizeC(1); N_noise = model.sizeG(1);
             M_system = model.sizeA(2); M_input = model.sizeB(2); M_output = model.sizeC(2); M_noise = model.sizeG(2);
